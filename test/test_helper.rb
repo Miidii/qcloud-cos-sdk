@@ -13,7 +13,7 @@ def init_config
     config.app_id = 'app-id'
     config.secret_id = 'secret_id'
     config.secret_key = 'secret_key'
-    config.endpoint = 'http://mock-server.com/v1/'
+    config.region = 'ap-guangzhou'
     config.bucket = 'privatesdkdemo'
   end
 end
@@ -27,7 +27,7 @@ def stub_client_request(verb, path, request = {}, response = {})
     body: body || { code: 0 }.to_json,
     headers: headers
   )
-  url = "#{QcloudCos.config.endpoint}#{QcloudCos.config.app_id}/#{QcloudCos.config.bucket}#{path}"
+  url = "#{QcloudCos.config.region}#{QcloudCos.config.app_id}/#{QcloudCos.config.bucket}#{path}"
   stub_request(verb, url).with(request).to_return(response)
 end
 

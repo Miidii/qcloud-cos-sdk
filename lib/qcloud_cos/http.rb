@@ -51,11 +51,6 @@ module QcloudCos
 
     def append_options!(options, url)
       options.merge!(uri_adapter: Addressable::URI)
-      if config.ssl_ca_file
-        options.merge!(ssl_ca_file: config.ssl_ca_file)
-      elsif url.start_with?('https://')
-        options.merge!(verify_peer: true)
-      end
     end
 
     def append_default_headers!(headers)

@@ -18,7 +18,7 @@ describe QcloudCos::Cli do
       file.puts "app_id=#{QcloudCos.config.app_id}"
       file.puts "secret_id=#{QcloudCos.config.secret_id}"
       file.puts "secret_key=#{QcloudCos.config.secret_key}"
-      file.puts "endpoint=#{QcloudCos.config.endpoint}"
+      file.puts "region=#{QcloudCos.config.region}"
       file.puts "bucket=#{QcloudCos.config.bucket}"
     end
   end
@@ -58,7 +58,7 @@ describe QcloudCos::Cli do
     end
 
     it "should not raise when missing bucket" do
-      expected_content = "app_id=app-id\nsecret_id=secret-id\nsecret_key=secret-key\nendpoint=http://mock-server/\nbucket=bucket\nssl_ca_file=\nmax_retry_times=\n"
+      expected_content = "app_id=app-id\nsecret_id=secret-id\nsecret_key=secret-key\nregion=ap-guangzhou\nbucket=bucket\n"
       Commander::UI.expects(:say_error).never
       Commander::UI.stubs(:ask).returns('app-id', 'secret-id', 'secret-key', 'http://mock-server/', 'bucket')
       QcloudCos::Cli.config(qcloud_file)
@@ -194,8 +194,8 @@ describe QcloudCos::Cli do
   end
 
   describe "download" do
-    let(:endpoint) { 'http://mock-server/' }
-    let(:file_link) { "#{endpoint}data/production.log" }
+    let(:region) { 'ap-guangzhou' }
+    let(:file_link) { "#{region}/data/production.log" }
     subject { QcloudCos::Cli.init }
 
     it "should raise" do
@@ -229,8 +229,8 @@ describe QcloudCos::Cli do
     end
 
     it 'Download whole folder /data/test/ and save under ./data/' do
-      file_link1 = "#{endpoint}data/test/sdk.zip"
-      file_link2 = "#{endpoint}data/test/test2/sdk.zip"
+      file_link1 = "#{region}/data/test/sdk.zip"
+      file_link2 = "#{region}/data/test/test2/sdk.zip"
       Commander::UI.expects(:say_ok).with('Save /data/test/ to ./data/')
       Commander::UI.expects(:say_ok).with('Save /data/test/test2/ to ./data/test2/')
       Commander::UI.expects(:say_ok).with('Save /data/test/test2/sdk.zip to ./data/test2/sdk.zip')
@@ -244,8 +244,8 @@ describe QcloudCos::Cli do
 
     it 'Download whole folder /data/test/ from bucket2 and save under ./data/' do
       '$ qcloud-cos download --bucket bucket2 /data/test/ ./data'
-      file_link1 = "#{endpoint}data/test/sdk.zip"
-      file_link2 = "#{endpoint}data/test/test2/sdk.zip"
+      file_link1 = "#{region}/data/test/sdk.zip"
+      file_link2 = "#{region}/data/test/test2/sdk.zip"
       Commander::UI.expects(:say_ok).with('Save /data/test/ to ./data/')
       Commander::UI.expects(:say_ok).with('Save /data/test/test2/ to ./data/test2/')
       Commander::UI.expects(:say_ok).with('Save /data/test/test2/sdk.zip to ./data/test2/sdk.zip')

@@ -12,10 +12,8 @@ module QcloudCos
       app_id: 'QCLOUD_COS_APP_ID',
       secret_id: 'QCLOUD_COS_SECRET_ID',
       secret_key: 'QCLOUD_COS_SECRET_KEY',
-      endpoint: 'QCLOUD_COS_ENDPOINT',
+      region: 'QCLOUD_COS_REGION',
       bucket: 'QCLOUD_COS_BUCKET',
-      ssl_ca_file: 'QCLOUD_COS_SSL_CA_FILE',
-      max_retry_times: 'QCLOUD_COS_MAX_RETRY_TIMES'
     }
 
     # 交互模式配置环境
@@ -33,11 +31,11 @@ module QcloudCos
       secret_key = Commander::UI.ask 'Qcloud COS Secret Key: '
       return Commander::UI.say_error('Missing Qcloud COS Secret Key') if secret_key.empty?
 
-      endpoint = Commander::UI.ask "Default Qcloud COS Endpoint [#{QcloudCos::DEFAULT_ENDPOINT}]: "
-      endpoint = QcloudCos::DEFAULT_ENDPOINT if endpoint.empty?
+      region = Commander::UI.ask "Default Qcloud COS Region [#{QcloudCos::DEFAULT_REGION}]: "
+      region = QcloudCos::DEFAULT_REGION if region.empty?
       bucket = Commander::UI.ask 'Default Qcloud COS Bucket: '
 
-      write_config(config_path, app_id: app_id, secret_id: secret_id, secret_key: secret_key, endpoint: endpoint, bucket: bucket)
+      write_config(config_path, app_id: app_id, secret_id: secret_id, secret_key: secret_key, region: region, bucket: bucket)
     end
 
     # 检查环境是否配置
@@ -333,10 +331,8 @@ module QcloudCos
         file.puts "app_id=#{options[:app_id]}"
         file.puts "secret_id=#{options[:secret_id]}"
         file.puts "secret_key=#{options[:secret_key]}"
-        file.puts "endpoint=#{options[:endpoint]}"
+        file.puts "region=#{options[:region]}"
         file.puts "bucket=#{options[:bucket]}"
-        file.puts 'ssl_ca_file='
-        file.puts 'max_retry_times='
       end
     end
   end

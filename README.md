@@ -28,7 +28,7 @@ QcloudCos.configure do |config|
   config.app_id = 'app-id'
   config.secret_id = 'secret_id'
   config.secret_key = 'secret_key'
-  config.endpoint = "http://web.file.myqcloud.com/files/v1/"
+  config.region = "ap-guangzhou"
   config.bucket = "default-bucket-name"
 end
 

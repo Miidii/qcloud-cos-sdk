@@ -76,23 +76,8 @@ QcloudCos.configure do |config|
   config.app_id = 'app-id'
   config.secret_id = 'secret_id'
   config.secret_key = 'secret_key'
-  config.endpoint = "http://web.file.myqcloud.com/files/v1/"
+  config.region = "ap-guangzhou"
   config.bucket = "default-bucket-name"
-end
-```
-
-### https支持
-
-需要支持 https, 有两种方式:
-
-
-1. 配置 endpoint 为 https 地址(比如： https://web.file.myqcloud.com/files/v1/ )即可。这时候会加密客户端请求，但是服务端会无条件信任证书
-
-2. 配置 endpoint 为 https 地址(比如： https://web.file.myqcloud.com/files/v1/ )，并配置 ssl_ca_file, 这样服务端会验证你的证书，保证你的通信安全并且合法
-
-```ruby
-QcloudCos.config do |config|
-  config.ssl_ca_file = 'path/to/ca/file'
 end
 ```
 
@@ -820,7 +805,10 @@ end
 |------|----|--------|--------|
 |code |Integer |是 |错误码，成功时为0|
 |message |String |是 |错误信息|
-|data |Hash  |是 |返回数据||data['session'] | String| 否    |本次分片上传 session ID||data['offset'] | Int | 否   |本次分片上传开始传输的位移，当上次分片上传未成功时不为零||data['slice_size'] | Int | 否    |本次分片上传分片大小|
+|data |Hash  |是 |返回数据|
+|data['session'] | String| 否    |本次分片上传 session ID|
+|data['offset'] | Int | 否   |本次分片上传开始传输的位移，当上次分片上传未成功时不为零|
+|data['slice_size'] | Int | 否    |本次分片上传分片大小|
 |data['access_url'] | String| 否    |生成的文件下载url|
 |data['url']    |String |否 |操作文件的url|
 |data['resource_path']  |String |否 |资源路径. 格式:/appid/bucket/xxx|
@@ -878,7 +866,9 @@ result = QcloudCos.init_slice_upload(dst_path, filesize, sha)  # { data: { sessi
 |------|----|--------|--------|
 |code |Integer |是 |错误码，成功时为0|
 |message |String |是 |错误信息|
-|data |Hash  |是 |返回数据||data['session'] | String| 否    |本次分片上传 session ID||data['offset'] | Int | 否   |本次分片上传传输的开始位移，如果使用多线程上传，可用于确定分片上传结果|
+|data |Hash  |是 |返回数据|
+|data['session'] | String| 否    |本次分片上传 session ID|
+|data['offset'] | Int | 否   |本次分片上传传输的开始位移，如果使用多线程上传，可用于确定分片上传结果|
 |data['access_url'] | String| 否    |生成的文件下载url|
 |data['url']    |String |否 |操作文件的url|
 |data['resource_path']  |String |否 |资源路径. 格式:/appid/bucket/xxx|
@@ -947,7 +937,7 @@ $ qcloud-cos config
 Qcloud COS APP ID: 
 Qcloud COS Secret ID: 
 Qcloud COS Secret Key: 
-Default Qcloud COS Endpoint [http://web.file.myqcloud.com/files/v1/]: 
+Default Qcloud COS Region [ap-guangzhou]: 
 Default Qcloud COS Bucket: 
 ```
 
@@ -959,9 +949,8 @@ Default Qcloud COS Bucket:
 export QCLOUD_COS_APP_ID='<your-app-id>'
 export QCLOUD_COS_SECRET_ID='<your-secret-id>'
 export QCLOUD_COS_SECRET_KEY='<your-secret-key>'
-export QCLOUD_COS_ENDPOINT='http://web.file.myqcloud.com/files/v1/'
+export QCLOUD_COS_REGION='guangzhou'
 export QCLOUD_COS_BUCKET='<your-bucket-name>'
-export QCLOUD_COS_SSL_CA_FILE='<your-ssl-ca-file-path>'
 ```
 
 ***注意：环境变量会覆盖配置文件中的设置***

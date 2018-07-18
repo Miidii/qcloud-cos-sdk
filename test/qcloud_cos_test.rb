@@ -176,21 +176,6 @@ describe QcloudCos do
         QcloudCos.upload_slice('/test', File.expand_path('./test/fixtures/sample.txt'))
       end
     end
-
-    it 'should config max retry times' do
-      QcloudCos.configure { |config| config.max_retry_times = 5 }
-      link = 'http://example.com/sample.txt'
-      session = 'randste' * 4
-      stub_client_request(:post, '/test', {}, body: { code: 0, data: { session: session, offset: 0, slice_size: 100_000 } }.to_json)
-        .to_raise(RuntimeError).times(4)
-        .to_return(
-          body: { code: 0, data: { url: link } }.to_json,
-          headers: { 'Content-Type' => 'application/json' }
-        )
-      result = QcloudCos.upload_slice('/test', File.expand_path('./test/fixtures/sample.txt'))
-      assert_kind_of(Hash, result)
-      assert_equal(link, result['url'])
-    end
   end
 
   it 'should update biz_attr for file' do

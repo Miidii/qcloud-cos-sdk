@@ -31,12 +31,9 @@ module QcloudCos
     end
 
     def upload_part(offset, content, &block)
-      retry_for(QcloudCos.config.max_retry_times) do
         @result = QcloudCos.upload_part(dst_path, session, offset, content, options)['data']
         notify_progress(offset + slice_size, &block)
-
         return true if complete?
-      end
     end
 
     def complete?

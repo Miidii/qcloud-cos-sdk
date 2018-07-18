@@ -10,9 +10,8 @@ module QcloudCos
   PUBLIC_EXPIRED_SECONDS = 600 # 10 minutes
   DEFAULT_SLICE_SIZE = 3_145_728 # 3M
   MIN_SLICE_FILE_SIZE = 10 # 10M
-  MAX_RETRY_TIMES = 3
-  QCLOUD_COS_CONFIG = '.qcloud-cos.yml'
-  DEFAULT_ENDPOINT = 'http://web.file.myqcloud.com/files/v1/'
+  QCLOUD_COS_CONFIG = '.qcloud-cos.yml'.freeze
+  DEFAULT_REGION = 'ap-guangzhou'.freeze
 
   class << self
     include Api
@@ -51,7 +50,8 @@ module QcloudCos
     end
 
     def generate_rest_url(bucket, path)
-      "#{config.endpoint}#{config.app_id}/#{bucket}#{path}"
+      #TODO
+      "#{config.region}#{config.app_id}/#{bucket}#{path}"
     end
 
     def file_validates(path, path_validate)
