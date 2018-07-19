@@ -2,9 +2,12 @@
 require 'qcloud_cos/utils'
 require 'qcloud_cos/multipart'
 require 'qcloud_cos/model/list'
+require 'httparty'
 
 module QcloudCos
   module Api
+    include HTTParty
+    debug_output $stdout
     # 列出文件或者目录
     #
     # @param path [String] 指定目标路径, 以 / 结尾, 则列出该目录下文件或者文件夹，不以 / 结尾，就搜索该前缀的文件或者文件夹
@@ -21,14 +24,14 @@ module QcloudCos
       bucket = validates(path, options, 'both')
 
       query = {
-        'op' => 'list',
-        'num' => 100
+          'op' => 'list',
+          'num' => 100
       }.merge(Utils.hash_slice(options, 'num', 'pattern', 'order', 'context'))
 
       url = generate_rest_url(bucket, path)
       sign = authorization.sign(bucket)
 
-      result = http.get(url, query: query, headers: { 'Authorization' => sign }).parsed_response
+      result = http.get(url, query: query, headers: {'Authorization' => sign}).parsed_response
       QcloudCos::List.new(result['data'])
     end
 
@@ -76,11 +79,11 @@ module QcloudCos
 
       url = generate_rest_url(bucket, path)
 
-      query = { 'op' => 'create' }.merge(Utils.hash_slice(options, 'biz_attr'))
+      query = {'op' => 'create'}.merge(Utils.hash_slice(options, 'biz_attr'))
 
       headers = {
-        'Authorization' => authorization.sign(bucket),
-        'Content-Type' => 'application/json'
+          'Authorization' => authorization.sign(bucket),
+          'Content-Type' => 'application/json'
       }
 
       http.post(url, body: query.to_json, headers: headers).parsed_response
@@ -101,13 +104,19 @@ module QcloudCos
 
       url = generate_rest_url(bucket, path)
 
-      query = {
-        'op' => 'upload'
-      }.merge(Utils.hash_slice(options, 'biz_attr')).merge(generate_file_query(file_or_bin))
+      uri = Addressable::URI.parse(url)
 
-      http.post(url, query: query, headers: { 'Authorization' => authorization.sign(bucket) }).parsed_response
+      headers = {
+          "Host" => uri.host,
+          "User-Agent" => user_agent
+      }
+
+      HTTParty.put(url, headers: {
+          'Authorization' => authorization.sign({}, headers, method: 'put', uri: uri.path)
+      }.merge(headers), body: file_or_bin)
     end
-    alias_method :create, :upload
+
+    alias create upload
 
     # 分片上传
     #
@@ -137,9 +146,9 @@ module QcloudCos
       bucket = validates(dst_path, options)
 
       multipart = QcloudCos::Multipart.new(
-        dst_path,
-        src_path,
-        options.merge(bucket: bucket, authorization: authorization)
+          dst_path,
+          src_path,
+          options.merge(bucket: bucket, authorization: authorization)
       )
       multipart.upload(&block)
       multipart.result
@@ -165,7 +174,7 @@ module QcloudCos
       query = generate_slice_upload_query(filesize, sha, options)
       sign = options['sign'] || authorization.sign(bucket)
 
-      http.post(url, query: query, headers: { 'Authorization' => sign }).parsed_response
+      http.post(url, query: query, headers: {'Authorization' => sign}).parsed_response
     end
 
     # 上传分片数据
@@ -186,7 +195,7 @@ module QcloudCos
       query = generate_upload_part_query(session, offset, content)
       sign = options['sign'] || authorization.sign(bucket)
 
-      http.post(url, query: query, headers: { 'Authorization' => sign }).parsed_response
+      http.post(url, query: query, headers: {'Authorization' => sign}).parsed_response
     end
 
     # 更新文件或者目录信息
@@ -202,12 +211,12 @@ module QcloudCos
       bucket = validates(path, options, 'both')
       url = generate_rest_url(bucket, path)
 
-      query = { 'op' => 'update', 'biz_attr' => biz_attr }
+      query = {'op' => 'update', 'biz_attr' => biz_attr}
 
       resource = "/#{bucket}#{Utils.url_encode(path)}"
       headers = {
-        'Authorization' => authorization.sign_once(bucket, resource),
-        'Content-Type' => 'application/json'
+          'Authorization' => authorization.sign_once(bucket, resource),
+          'Content-Type' => 'application/json'
       }
 
       http.post(url, body: query.to_json, headers: headers).parsed_response
@@ -225,12 +234,12 @@ module QcloudCos
       bucket = validates(path, options, 'both')
       url = generate_rest_url(bucket, path)
 
-      query = { 'op' => 'delete' }
+      query = {'op' => 'delete'}
 
       resource = "/#{bucket}#{Utils.url_encode(path)}"
       headers = {
-        'Authorization' => authorization.sign_once(bucket, resource),
-        'Content-Type' => 'application/json'
+          'Authorization' => authorization.sign_once(bucket, resource),
+          'Content-Type' => 'application/json'
       }
 
       http.post(url, body: query.to_json, headers: headers).parsed_response
@@ -287,28 +296,28 @@ module QcloudCos
       bucket = validates(path, options, 'both')
       url = generate_rest_url(bucket, path)
 
-      query = { 'op' => 'stat' }
+      query = {'op' => 'stat'}
       sign = authorization.sign(bucket)
 
-      http.get(url, query: query, headers: { 'Authorization' => sign }).parsed_response
+      http.get(url, query: query, headers: {'Authorization' => sign}).parsed_response
     end
 
     private
 
     def generate_slice_upload_query(filesize, sha, options)
       {
-        'op' => 'upload_slice',
-        'filesize' => filesize,
-        'sha' => sha,
-        'filecontent' => Tempfile.new("temp-#{Time.now.to_i}")
+          'op' => 'upload_slice',
+          'filesize' => filesize,
+          'sha' => sha,
+          'filecontent' => Tempfile.new("temp-#{Time.now.to_i}")
       }.merge(Utils.hash_slice(options, 'biz_attr', 'session', 'slice_size'))
     end
 
     def generate_upload_part_query(session, offset, content)
       {
-        'op' => 'upload_slice',
-        'session' => session,
-        'offset' => offset
+          'op' => 'upload_slice',
+          'session' => session,
+          'offset' => offset
       }.merge(generate_file_query(content))
     end
 
@@ -330,5 +339,11 @@ module QcloudCos
       tempfile.rewind
       tempfile
     end
+
+
+    def user_agent
+      "qcloud-cos-sdk-ruby/#{QcloudCos::VERSION} (#{RbConfig::CONFIG['host_os']} ruby-#{RbConfig::CONFIG['ruby_version']})"
+    end
+
   end
 end

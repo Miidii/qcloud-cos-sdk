@@ -1,7 +1,6 @@
 require 'qcloud_cos/version'
 require 'qcloud_cos/configuration'
 require 'qcloud_cos/authorization'
-require 'qcloud_cos/http'
 require 'qcloud_cos/api'
 require 'qcloud_cos/convenient_api'
 
@@ -28,11 +27,6 @@ module QcloudCos
     end
 
     private
-
-    def http
-      Http.new(config)
-    end
-
     def authorization
       Authorization.new(config)
     end
@@ -50,8 +44,7 @@ module QcloudCos
     end
 
     def generate_rest_url(bucket, path)
-      #TODO
-      "#{config.region}#{config.app_id}/#{bucket}#{path}"
+      "https://#{bucket}.cos.#{config.region}.myqcloud.com#{path}"
     end
 
     def file_validates(path, path_validate)

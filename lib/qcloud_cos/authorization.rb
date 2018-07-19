@@ -3,6 +3,7 @@
 require 'base64'
 require 'openssl'
 require 'digest'
+require 'addressable/uri'
 
 module QcloudCos
   class Authorization
@@ -15,32 +16,43 @@ module QcloudCos
       @config = config
     end
 
-    # 生成单次有效签名
-    #
-    # @param bucket [String] 指定 Bucket 名字
-    # @param fileid [String] 指定要签名的资源
-    def sign_once(bucket, fileid)
-      sign_base(bucket, fileid, 0)
-    end
+    def sign(params = {}, headers = {}, options = {method: 'get', uri: '/'})
+      current_time = Time.now.to_i
 
-    # 生成多次有效签名
-    #
-    # @param bucket [String] 指定 Bucket 名字
-    # @param expired [Integer] (EXPIRED_SECONDS) 指定签名过期时间, 秒作为单位
-    def sign_more(bucket, expired = EXPIRED_SECONDS)
-      sign_base(bucket, nil, current_time + expired)
+      q_sign_algorithm = 'sha1'
+      q_ak = secret_id
+      q_sign_time = current_time.to_s + ';' + (current_time + 3600).to_s
+      q_key_time = q_sign_time
+      q_header_list = headers.keys.sort.join(';').downcase
+      q_url_param_list = params.keys.sort.join(';').downcase
+
+      digest = OpenSSL::Digest.new('sha1')
+
+      uri = Addressable::URI.new
+      uri.query_values = params
+
+      header_uri = Addressable::URI.new
+      header_uri.query_values = headers
+
+      sign_key = OpenSSL::HMAC.hexdigest(digest, secret_key, q_key_time)
+      http_string = [options[:method].downcase, options[:uri].downcase, uri.query.downcase, header_uri.query.downcase, ''].join("\n")
+      string_to_sign = ['sha1', q_sign_time, Digest::SHA1.hexdigest(http_string), ''].join("\n")
+      puts http_string
+      puts string_to_sign
+      signature = OpenSSL::HMAC.hexdigest(digest, sign_key, string_to_sign)
+      auth = %W[
+        q-sign-algorithm=#{q_sign_algorithm}
+        q-ak=#{q_ak}
+        q-sign-time=#{q_sign_time}
+        q-key-time=#{q_key_time}
+        q-header-list=#{q_header_list}
+        q-url-param-list=#{q_url_param_list}
+        q-signature=#{signature}
+      ].join('&')
+      puts auth
     end
-    alias_method :sign, :sign_more
 
     private
-
-    def sign_base(bucket, fileid, expired)
-      fileid = "/#{app_id}#{fileid}" if fileid
-
-      src_str = "a=#{app_id}&b=#{bucket}&k=#{secret_id}&e=#{expired}&t=#{current_time}&r=#{rdm}&f=#{fileid}"
-
-      Base64.encode64("#{OpenSSL::HMAC.digest('sha1', secret_key, src_str)}#{src_str}").delete("\n").strip
-    end
 
     def app_id
       config.app_id
@@ -52,10 +64,6 @@ module QcloudCos
 
     def secret_key
       config.secret_key
-    end
-
-    def current_time
-      Time.now.to_i
     end
 
     def rdm
