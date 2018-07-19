@@ -3,6 +3,7 @@ require 'qcloud_cos/utils'
 require 'qcloud_cos/multipart'
 require 'qcloud_cos/model/list'
 require 'httparty'
+require 'addressable'
 
 module QcloudCos
   module Api
@@ -107,13 +108,17 @@ module QcloudCos
       uri = Addressable::URI.parse(url)
 
       headers = {
-          "Host" => uri.host,
-          "User-Agent" => user_agent
+          'Host' => uri.host
       }
 
-      HTTParty.put(url, headers: {
+      puts HTTParty.put(url, headers: {
+          'User-Agent' => user_agent,
+          'x-cos-security-token' => '',
+          'x-cos-storage-class' => 'STANDARD',
+          'Content-Type' => 'text/txt; charset=utf-8',
+          'abc' => 'eee',
           'Authorization' => authorization.sign({}, headers, method: 'put', uri: uri.path)
-      }.merge(headers), body: file_or_bin)
+      }.merge(headers), body: file_or_bin, :debug_output => $stdout)
     end
 
     alias create upload

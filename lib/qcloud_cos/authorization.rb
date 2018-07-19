@@ -3,7 +3,7 @@
 require 'base64'
 require 'openssl'
 require 'digest'
-require 'addressable/uri'
+require 'uri'
 
 module QcloudCos
   class Authorization
@@ -21,24 +21,26 @@ module QcloudCos
 
       q_sign_algorithm = 'sha1'
       q_ak = secret_id
-      q_sign_time = current_time.to_s + ';' + (current_time + 3600).to_s
+      q_sign_time = current_time.to_s + ';' + (current_time + 10000).to_s
       q_key_time = q_sign_time
       q_header_list = headers.keys.sort.join(';').downcase
       q_url_param_list = params.keys.sort.join(';').downcase
 
       digest = OpenSSL::Digest.new('sha1')
 
-      uri = Addressable::URI.new
-      uri.query_values = params
-
-      header_uri = Addressable::URI.new
-      header_uri.query_values = headers
+      params_str = params.sort.to_h.map do |k, v|
+        "#{k.downcase}=#{URI.escape(v, Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))}"
+      end.join('&')
+      headers_str = headers.sort.to_h.map do |k, v|
+        "#{k.downcase}=#{URI.escape(v, Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))}"
+      end.join('&')
 
       sign_key = OpenSSL::HMAC.hexdigest(digest, secret_key, q_key_time)
-      http_string = [options[:method].downcase, options[:uri].downcase, uri.query.downcase, header_uri.query.downcase, ''].join("\n")
+      puts "sign key:" + sign_key
+      http_string = [options[:method].downcase, options[:uri], params_str, headers_str, ''].join("\n")
       string_to_sign = ['sha1', q_sign_time, Digest::SHA1.hexdigest(http_string), ''].join("\n")
-      puts http_string
-      puts string_to_sign
+      puts "http string:" + http_string
+      puts "string to sign:" + string_to_sign
       signature = OpenSSL::HMAC.hexdigest(digest, sign_key, string_to_sign)
       auth = %W[
         q-sign-algorithm=#{q_sign_algorithm}
@@ -49,7 +51,8 @@ module QcloudCos
         q-url-param-list=#{q_url_param_list}
         q-signature=#{signature}
       ].join('&')
-      puts auth
+      puts "auth:" + auth
+      return auth
     end
 
     private
