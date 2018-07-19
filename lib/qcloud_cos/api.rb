@@ -3,11 +3,37 @@ require 'qcloud_cos/utils'
 require 'qcloud_cos/multipart'
 require 'qcloud_cos/model/list'
 require 'httparty'
+require 'nori'
 
 module QcloudCos
   module Api
     include HTTParty
-    debug_output $stdout
+
+
+    # 列出 Buckets
+    #
+    # @param options [Hash] options
+    #
+    # @return [Hash]
+    def list_buckets(options = {})
+
+      uri = Addressable::URI.parse("https://service.cos.myqcloud.com/")
+
+      headers = {
+          "Host" => uri.host,
+          "User-Agent" => user_agent
+      }
+
+      hash = parser.parse(
+          HTTParty.get(uri.display_uri, headers: {
+              'Authorization' => authorization.sign({}, headers, method: 'get', uri: uri.path)
+          }.merge(headers), debug_output: $stdout).body
+      )
+
+      puts hash
+    end
+
+
     # 列出文件或者目录
     #
     # @param path [String] 指定目标路径, 以 / 结尾, 则列出该目录下文件或者文件夹，不以 / 结尾，就搜索该前缀的文件或者文件夹
@@ -340,6 +366,9 @@ module QcloudCos
       tempfile
     end
 
+    def parser
+      Nori.new
+    end
 
     def user_agent
       "qcloud-cos-sdk-ruby/#{QcloudCos::VERSION} (#{RbConfig::CONFIG['host_os']} ruby-#{RbConfig::CONFIG['ruby_version']})"
