@@ -4,4 +4,5 @@ source 'https://rubygems.org'
 gemspec
 gem 'addressable'
 gem 'simplecov'
-gem 'xml-simple'
+gem 'nori'
+gem 'nokogiri'

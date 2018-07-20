@@ -4,11 +4,93 @@ require 'qcloud_cos/multipart'
 require 'qcloud_cos/model/list'
 require 'httparty'
 require 'addressable'
-require 'xmlsimple'
+require 'nori'
 
 module QcloudCos
   module Api
     include HTTParty
+
+
+    # 列出 Buckets
+    #
+    # @param options [Hash] options
+    #
+    # @return [Hash]
+    def list_buckets(options = {})
+
+      uri = Addressable::URI.parse("https://service.cos.myqcloud.com/")
+
+      headers = {
+          "Host" => uri.host,
+          "User-Agent" => user_agent
+      }
+
+      hash = parser.parse(
+          HTTParty.get(uri.display_uri, headers: {
+              'Authorization' => authorization.sign({}, headers, method: 'get', uri: uri.path)
+          }.merge(headers), debug_output: $stdout).body
+      )
+
+      puts hash
+    end
+
+
+    # 列出文件或者目录
+    #
+    # @param path [String] 指定目标路径, 以 / 结尾, 则列出该目录下文件或者文件夹，不以 / 结尾，就搜索该前缀的文件或者文件夹
+    # @param options [Hash] 额外参数
+    # @option options [String] :bucket (config.bucket_name) 指定当前 bucket, 默认是配置里面的 bucket
+    # @option options [Integer] :num (100) 指定需要拉取的条目, 可选范围: 1~199
+    # @option options [String] :pattern (eListBoth) 指定拉取的内容，可选值: eListBoth, eListDirOnly, eListFileOnly
+    # @option options [Integer] :order (0) 指定拉取文件的顺序, 默认为正序(=0), 可选值: 0, 1
+    # @option options [String] :context ("") 透传字段，查看第一页，则传空字符串。若需要翻页，需要将前一页返回值中的context透传到参数中。order用于指定翻页顺序。若order填0，则从当前页正序/往下翻页；若order填1，则从当前页倒序/往上翻页。
+    #
+    # @return [Hash]
+    def list(path = '/', options = {})
+      path = fixed_path(path)
+      bucket = validates(path, options, 'both')
+
+      query = {
+          'op' => 'list',
+          'num' => 100
+      }.merge(Utils.hash_slice(options, 'num', 'pattern', 'order', 'context'))
+
+      url = generate_rest_url(bucket, path)
+      sign = authorization.sign(bucket)
+
+      result = http.get(url, query: query, headers: {'Authorization' => sign}).parsed_response
+      QcloudCos::List.new(result['data'])
+    end
+
+    # 列出所有文件
+    #
+    # @param path [String] 指定目标路径, 以 / 结尾, 则列出该目录下文件，不以 / 结尾，就搜索该前缀的文件
+    # @param options [Hash] 额外参数
+    # @option options [String] :bucket (config.bucket_name) 指定当前 bucket, 默认是配置里面的 bucket
+    # @option options [Integer] :num (100) 指定需要拉取的条目
+    # @option options [Integer] :order (0) 指定拉取文件的顺序, 默认为正序(=0), 可选值: 0, 1
+    # @option options [String] :context ("") 透传字段，查看第一页，则传空字符串。若需要翻页，需要将前一页返回值中的context透传到参数中。order用于指定翻页顺序。若order填0，则从当前页正序/往下翻页；若order填1，则从当前页倒序/往上翻页。
+    #
+    # @return [Hash]
+    def list_files(path = '/', options = {})
+      Utils.stringify_keys!(options)
+      list(path, options.merge('pattern' => 'eListFileOnly'))
+    end
+
+    # 列出所有目录
+    #
+    # @param path [String] 指定目标路径, 以 / 结尾, 则列出该目录下文件夹，不以 / 结尾，就搜索该前缀的文件夹
+    # @param options [Hash] 额外参数
+    # @option options [String] :bucket (config.bucket_name) 指定当前 bucket, 默认是配置里面的 bucket
+    # @option options [Integer] :num (100) 指定需要拉取的条目
+    # @option options [Integer] :order (0) 指定拉取文件的顺序, 默认为正序(=0), 可选值: 0, 1
+    # @option options [String] :context ("") 透传字段，查看第一页，则传空字符串。若需要翻页，需要将前一页返回值中的context透传到参数中。order用于指定翻页顺序。若order填0，则从当前页正序/往下翻页；若order填1，则从当前页倒序/往上翻页。
+    #
+    # @return [Hash]
+    def list_folders(path = '/', options = {})
+      Utils.stringify_keys!(options)
+      list(path, options.merge('pattern' => 'eListDirOnly'))
+    end
 
     # 创建目录
     #
@@ -288,6 +370,9 @@ module QcloudCos
       tempfile
     end
 
+    def parser
+      Nori.new
+    end
 
     def user_agent
       "qcloud-cos-sdk-ruby/#{QcloudCos::VERSION} (#{RbConfig::CONFIG['host_os']} ruby-#{RbConfig::CONFIG['ruby_version']})"
