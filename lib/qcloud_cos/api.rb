@@ -18,11 +18,11 @@ module QcloudCos
     # @return [Hash]
     def list_buckets(options = {})
 
-      uri = Addressable::URI.parse("https://service.cos.myqcloud.com/")
+      uri = Addressable::URI.parse('https://service.cos.myqcloud.com/')
 
       headers = {
-          "Host" => uri.host,
-          "User-Agent" => user_agent
+          'Host' => uri.host,
+          'User-Agent' => user_agent
       }
 
       hash = parser.parse(
@@ -31,7 +31,7 @@ module QcloudCos
           }.merge(headers), debug_output: $stdout).body
       )
 
-      hash["ListAllMyBucketsResult"]["Bucket"]
+      hash['ListAllMyBucketsResult']['Bucket']
     end
 
     # 上传文件
@@ -55,13 +55,19 @@ module QcloudCos
           'Host' => uri.host
       }
 
-      HTTParty.put(url, headers: {
+      response = HTTParty.put(url, headers: {
           'User-Agent' => user_agent,
           'x-cos-security-token' => '',
           'x-cos-storage-class' => 'STANDARD',
           'Content-Type' => 'text/txt; charset=utf-8',
           'Authorization' => authorization.sign({}, headers, method: 'put', uri: uri.path)
-      }.merge(headers), body: file_or_bin, :debug_output => $stdout)
+      }.merge(headers), body: file_or_bin.read)
+
+      if response.code == 200
+        return url
+      else
+        return ''
+      end
     end
 
     alias create upload
